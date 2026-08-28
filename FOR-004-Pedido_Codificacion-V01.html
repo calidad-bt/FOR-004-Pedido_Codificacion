@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FOR-004 · Pedido de Codificación de Producto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --accent:    #0E6B8A;
+  --accent-d:  #094E66;
+  --accent-l:  #E4F2F7;
+  --bg:        #ECEEF0;
+  --surface:   #FFFFFF;
+  --border:    #D0D4D9;
+  --border-d:  #B0B6BC;
+  --text:      #1C2226;
+  --text-2:    #5A6470;
+  --text-3:    #8A949E;
+  --ok-bg:     #EAF5EC;  --ok-text:   #1E6B2E;  --ok-bd:   #A8D5AE;
+  --warn-bg:   #FEF9EC;  --warn-text: #8A5C00;  --warn-bd: #ECD98A;
+  --err-bg:    #FDEDED;  --err-text:  #B72020;  --err-bd:  #F5AAAA;
+  --nav-h:     40px;
+  --radius:    4px;
+  --font:      'IBM Plex Sans', sans-serif;
+  --mono:      'IBM Plex Mono', monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text);
+  background: var(--bg);
+}
+
+/* ===== NAV ===== */
+nav {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: var(--nav-h);
+  background: var(--accent-d);
+  border-bottom: 2px solid var(--accent);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px;
+  z-index: 200;
+}
+.nav-brand {
+  font-family: var(--mono);
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .06em;
+  color: rgba(255,255,255,.9);
+  padding-right: 14px;
+  border-right: 1px solid rgba(255,255,255,.2);
+}
+.nav-end { display: flex; align-items: center; gap: 10px; }
+#liveDot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #4ADE80; box-shadow: 0 0 6px #4ADE80;
+  display: none;
+}
+#liveDot.on { display: inline-block; }
+#syncStatus {
+  font-family: var(--mono); font-size: 11px;
+  color: rgba(255,255,255,.55);
+}
+#syncStatus.sync-ok    { color: #4ADE80; }
+#syncStatus.sync-error { color: #F87171; }
+
+/* ===== LAYOUT ===== */
+.layout {
+  padding: calc(var(--nav-h) + 20px) 20px 40px;
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex; flex-direction: column; gap: 0;
+}
+
+/* ===== CARDS ===== */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.card + .card { border-top: none; }
+.card:first-child { border-radius: var(--radius) var(--radius) 0 0; }
+.card:last-child  { border-radius: 0 0 var(--radius) var(--radius); }
+.card-body { padding: 14px 16px 16px; }
+
+/* ===== ENCABEZADO DOCUMENTAL ===== */
+.doc-header {
+  display: grid;
+  grid-template-columns: 90px 1fr auto;
+  border-bottom: 1px solid var(--border);
+}
+.doc-logo {
+  background: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  border-right: 1px solid var(--border);
+}
+.doc-logo span {
+  font-family: var(--mono); font-size: 18px; font-weight: 600;
+  color: #fff; letter-spacing: .08em;
+}
+.doc-title-col {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center;
+  padding: 10px 20px;
+  border-right: 1px solid var(--border);
+}
+.doc-title { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.doc-subtitle { font-size: 12px; color: var(--text-2); margin-top: 3px; }
+.doc-meta { display: grid; grid-template-columns: 1fr 1fr; }
+.meta-cell { padding: 6px 12px; min-width: 110px; border-left: 1px solid var(--border); }
+.meta-cell.top { border-bottom: 1px solid var(--border); }
+.meta-label { font-size: 9px; text-transform: uppercase; letter-spacing: .07em; color: var(--text-3); }
+.meta-value, .meta-input {
+  font-family: var(--mono); font-size: 12px; font-weight: 600;
+  border: none; background: transparent; padding: 0; width: 100%; color: var(--text);
+}
+.meta-input:focus { outline: none; }
+
+/* ===== SECTION TITLES ===== */
+.section-title {
+  font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--accent);
+  padding-bottom: 6px; margin: 0 0 12px;
+  border-bottom: 1.5px solid var(--accent-l);
+  display: flex; align-items: center; gap: 6px;
+}
+.section-title::before {
+  content: ""; width: 3px; height: 12px; background: var(--accent); border-radius: 2px;
+}
+.section { margin-bottom: 22px; }
+.section:last-child { margin-bottom: 0; }
+
+/* ===== FORM FIELDS ===== */
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px 16px;
+}
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field.full { grid-column: 1 / -1; }
+.field.half { grid-column: span 1; }
+.field-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--text-2);
+}
+.field-label .req { color: var(--err-text); margin-left: 2px; }
+.field input[type="text"],
+.field input[type="date"],
+.field textarea,
+.field select {
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 7px 10px;
+  background: var(--surface);
+  width: 100%;
+}
+.field input:focus, .field textarea:focus, .field select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(14,107,138,.08);
+}
+.field select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6'%3E%3Cpath d='M0 0l4.5 6L9 0z' fill='%231C2226'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 26px;
+  cursor: pointer;
+}
+.field select:disabled { color: var(--text-3); background-color: var(--bg); cursor: not-allowed; }
+.field textarea { resize: vertical; min-height: 60px; font-family: var(--font); }
+.field input[readonly] { background: var(--bg); color: var(--text-2); }
+.field-hint { font-size: 11px; color: var(--text-3); }
+
+/* ===== FOTO ===== */
+.photo-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.photo-drop {
+  flex: 1; min-width: 220px;
+  border: 1.5px dashed var(--border-d);
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+  color: var(--text-2);
+  font-size: 12px;
+  cursor: pointer;
+  background: var(--bg);
+}
+.photo-drop:hover { border-color: var(--accent); background: var(--accent-l); color: var(--accent); }
+.photo-drop input { display: none; }
+.photo-preview {
+  width: 110px; height: 110px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  display: none;
+  align-items: center; justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.photo-preview.show { display: flex; }
+.photo-preview img { width: 100%; height: 100%; object-fit: cover; }
+.photo-filename { font-family: var(--mono); font-size: 11px; color: var(--text-2); margin-top: 6px; word-break: break-all; }
+
+/* ===== BOTONES ===== */
+.btn {
+  height: 30px; padding: 0 12px;
+  font-size: 12px; font-weight: 600;
+  border-radius: var(--radius);
+  border: 1px solid;
+  display: inline-flex; align-items: center; gap: 5px;
+  cursor: pointer;
+  transition: filter .1s;
+}
+.btn:hover { filter: brightness(.93); }
+.btn:disabled { opacity: .5; cursor: not-allowed; filter: none; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; height: 34px; padding: 0 18px; font-size: 13px; }
+.btn-light   { background: var(--surface); border-color: var(--border); color: var(--text-2); }
+
+.form-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; flex-wrap: wrap;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.send-status {
+  font-family: var(--mono); font-size: 12px;
+}
+.send-status.ok    { color: var(--ok-text); }
+.send-status.error { color: var(--err-text); }
+.send-status.pending { color: var(--text-2); }
+
+.banner {
+  display: none;
+  font-size: 12px;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  border: 1px solid;
+  margin-bottom: 16px;
+}
+.banner.show { display: block; }
+.banner.ok    { background: var(--ok-bg);   border-color: var(--ok-bd);   color: var(--ok-text); }
+.banner.error { background: var(--err-bg);  border-color: var(--err-bd);  color: var(--err-text); }
+
+/* ===== PRINT ===== */
+@media print {
+  @page { size: A4; margin: 20mm 18mm; }
+  nav, .no-print { display: none !important; }
+  body { background: white; }
+  .layout { padding: 0; }
+  .card { box-shadow: none; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+@media (max-width: 720px) {
+  .field-grid { grid-template-columns: 1fr; }
+  .field.half { grid-column: span 1; }
+  .doc-header { grid-template-columns: 60px 1fr; }
+  .doc-meta { grid-column: 1 / -1; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--border); }
+  .meta-cell { border-left: 1px solid var(--border); }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">BIOTROM · SGC</div>
+  <div class="nav-end">
+    <span id="liveDot"></span>
+    <span id="syncStatus"></span>
+  </div>
+</nav>
+
+<div class="layout">
+
+  <!-- ENCABEZADO DOCUMENTAL -->
+  <div class="card">
+    <div class="doc-header">
+      <div class="doc-logo"><span>BT</span></div>
+      <div class="doc-title-col">
+        <div class="doc-title">Pedido de Codificación de Producto</div>
+        <div class="doc-subtitle">Solicitud de asignación de código ANMAT</div>
+      </div>
+      <div class="doc-meta">
+        <div class="meta-cell top">
+          <div class="meta-label">Aprobación</div>
+          <input class="meta-input" value="28/08/2026">
+        </div>
+        <div class="meta-cell top">
+          <div class="meta-label">Entrada en vigor</div>
+          <input class="meta-input" value="28/08/2026">
+        </div>
+        <div class="meta-cell">
+          <div class="meta-label">Código</div>
+          <input class="meta-input" value="FOR-004">
+        </div>
+        <div class="meta-cell">
+          <div class="meta-label">Versión</div>
+          <input class="meta-input" value="V01">
+        </div>
+      </div>
+    </div>
+
+    <div class="card-body">
+
+      <div class="banner ok" id="bannerOk">Solicitud enviada correctamente. Se notificó a anmat.biotrom@gmail.com.</div>
+      <div class="banner error" id="bannerErr">No se pudo enviar la solicitud. Verificá la conexión e intentá nuevamente.</div>
+
+      <form id="codForm">
+
+        <div class="section">
+          <div class="section-title">Datos de la solicitud</div>
+          <div class="field-grid">
+            <div class="field">
+              <div class="field-label">Solicitante<span class="req">*</span></div>
+              <input type="text" name="Solicitante" id="solicitante" required placeholder="Nombre y apellido">
+            </div>
+            <div class="field">
+              <div class="field-label">Fecha</div>
+              <input type="text" name="Fecha" id="fecha" readonly>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Producto y clasificación</div>
+          <div class="field-grid">
+            <div class="field full">
+              <div class="field-label">Producto<span class="req">*</span></div>
+              <input type="text" name="Producto" id="producto" required placeholder="Nombre / descripción del producto a codificar">
+            </div>
+
+            <div class="field">
+              <div class="field-label">Grupo<span class="req">*</span></div>
+              <select name="Grupo" id="grupo" required>
+                <option value="" selected disabled>Seleccionar…</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <div class="field-label">Subgrupo<span class="req">*</span></div>
+              <select name="Subgrupo" id="subgrupo" required disabled>
+                <option value="" selected disabled>Elegir grupo primero…</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <div class="field-label">Material<span class="req">*</span></div>
+              <select name="Material" id="material" required>
+                <option value="" selected disabled>Seleccionar…</option>
+              </select>
+            </div>
+
+            <div class="field full">
+              <div class="field-label">Observaciones</div>
+              <textarea name="Observaciones" id="observaciones" placeholder="Aclaraciones adicionales (opcional)"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Fotografía del producto</div>
+          <div class="photo-row">
+            <label class="photo-drop" id="photoDrop">
+              <span id="photoDropText">Hacé clic para elegir una imagen (opcional)</span>
+              <input type="file" name="Fotografia" id="fotoInput" accept="image/*">
+            </label>
+            <div class="photo-preview" id="photoPreview">
+              <img id="photoImg" alt="Vista previa">
+            </div>
+          </div>
+          <div class="photo-filename" id="photoFilename"></div>
+        </div>
+
+        <div class="form-footer">
+          <span class="send-status" id="sendStatus"></span>
+          <div style="display:flex; gap:8px;">
+            <button type="button" class="btn btn-light no-print" id="btnReset">Limpiar</button>
+            <button type="submit" class="btn btn-primary" id="btnSend">Enviar solicitud</button>
+          </div>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ================= DATOS DE CLASIFICACIÓN ================= */
+const GRUPOS = [
+  { v: "1", l: "1 · TUTORES" },
+  { v: "2", l: "2 · COLUMNA VIA POSTERIOR" },
+  { v: "3", l: "3 · COLUMNA VIA ANTERIOR" },
+  { v: "4", l: "4 · OSTEOSINTESIS" },
+  { v: "5", l: "5 · CLAVOS" },
+  { v: "6", l: "6 · PROTESIS / ENDOPROTESIS" },
+];
+
+const SUBGRUPOS = {
+  "1": [
+    { v: "1A", l: "1A · MULTIFIX I" },
+    { v: "1E", l: "1E · MULTIFIX II" },
+    { v: "1C", l: "1C · MULTIFIX III" },
+    { v: "1D", l: "1D · MULTIFIX III MINI AO" },
+    { v: "1F", l: "1F · MULTIFIX IV" },
+    { v: "1G", l: "1G · MULTIFIX V" },
+  ],
+  "2": [
+    { v: "2A", l: "2A · SISTEMA DE MARCOS" },
+    { v: "2B", l: "2B · SISTEMA AME" },
+    { v: "2C", l: "2C · SISTEMA ISOFIX" },
+    { v: "2D", l: "2D · SISTEMA LPS" },
+    { v: "2E", l: "2E · SISTEMA CENTUM P" },
+    { v: "2F", l: "2F · SISTEMA ISOSPINE I" },
+    { v: "2G", l: "2G · SISTEMA ISOSPINE PEDIATRICO" },
+    { v: "2H", l: "2H · SISTEMA AXIUM" },
+    { v: "2J", l: "2J · SISTEMA FLEXUS" },
+    { v: "2K", l: "2K · SISTEMA DE LAMINOPLASTIA" },
+  ],
+  "3": [
+    { v: "3A", l: "3A · SISTEMA LASER" },
+    { v: "3B", l: "3B · SISTEMA K-ANT" },
+    { v: "3C", l: "3C · SISTEMA ISOPLATE CERVICAL" },
+    { v: "3D", l: "3D · SISTEMA ISOPLATE DORSAL" },
+    { v: "3E", l: "3E · SISTEMA CENTRUM C" },
+    { v: "3F", l: "3F · SISTEMA CENTRUM A" },
+    { v: "3G", l: "3G · SISTEMA CENTRUM A DE PEEK" },
+  ],
+  "4": [
+    { v: "4A", l: "4A · MICRO FRAGMENTOS" },
+    { v: "4B", l: "4B · MINI FRAGMENTOS" },
+    { v: "4C", l: "4C · PEQ. FRAGMENTOS" },
+    { v: "4D", l: "4D · GRAND FRAGMENTOS" },
+    { v: "4E", l: "4E · CANULADOS Ø 4 Y 4.5" },
+    { v: "4F", l: "4F · CANULADOS Ø 7" },
+    { v: "4G", l: "4G · KUROSAKA" },
+    { v: "4H", l: "4H · ALAMBRES" },
+    { v: "4J", l: "4J · SUNCHOS" },
+    { v: "4K", l: "4K · ARPONES" },
+    { v: "4L", l: "4L · BLOQUEADO PEQ. FRAG." },
+    { v: "4M", l: "4M · BLOQUEADO GRA. FRAG." },
+    { v: "4N", l: "4N · HERBERT - BAROUK" },
+    { v: "4O", l: "4O · PLACA HP (HUMERO PROXIMAL)" },
+    { v: "4P", l: "4P · PLACA CABLE" },
+    { v: "4Q", l: "4Q · SUBASTRAGALINO" },
+  ],
+  "5": [
+    { v: "5A", l: "5A · ENDO MEDULAR DE FEMUR" },
+    { v: "5B", l: "5B · SISTEMA DE PLACA TUBO" },
+    { v: "5C", l: "5C · CLAVO ELASTICO / TENSOR / QUADRO" },
+    { v: "5D", l: "5D · CLAVO JEWETT" },
+    { v: "5E", l: "5E · CLAVO ENDERS" },
+    { v: "5F", l: "5F · CLAVO RUSH" },
+    { v: "5G", l: "5G · CLAVO KIRSCHNER" },
+    { v: "5H", l: "5H · CLAVIJAS" },
+    { v: "5I", l: "5I · RETROGRADO DE FEMUR / RETROGRADO DE TIBIA (TOBILLO)" },
+    { v: "5J", l: "5J · STEINMAN" },
+    { v: "5K", l: "5K · ENDOMEDULAR DE TIBIA" },
+    { v: "5L", l: "5L · ENDOMEDULAR DE HÚMERO" },
+    { v: "5M", l: "5M · CLAVO ALFA" },
+    { v: "5N", l: "5N · CLAVO CEFALO-FEMORAL" },
+  ],
+  "6": [
+    { v: "6A", l: "6A · CADERA" },
+    { v: "6B", l: "6B · RODILLA" },
+    { v: "6C", l: "6C · NO CONVENCIONALES" },
+    { v: "6D", l: "6D · ESPACIADORES" },
+    { v: "6E", l: "6E · IMPLANTES ESPECIALES" },
+    { v: "6F", l: "6F · NO CONVENCIONALES MODULADAS" },
+  ],
+};
+
+const MATERIALES = [
+  { v: "T", l: "T · TITANIO" },
+  { v: "X", l: "X · ACERO" },
+  { v: "A", l: "A · ALUMINIO" },
+  { v: "U", l: "U · POLIETILENO" },
+  { v: "C", l: "C · CEMENTO" },
+  { v: "S", l: "S · SILICONA" },
+  { v: "F", l: "F · F138" },
+];
+
+/* ================= POBLAR SELECTS ================= */
+const grupoSel = document.getElementById("grupo");
+const subgrupoSel = document.getElementById("subgrupo");
+const materialSel = document.getElementById("material");
+
+GRUPOS.forEach(g => {
+  const opt = document.createElement("option");
+  opt.value = g.v; opt.textContent = g.l;
+  grupoSel.appendChild(opt);
+});
+
+MATERIALES.forEach(m => {
+  const opt = document.createElement("option");
+  opt.value = m.v; opt.textContent = m.l;
+  materialSel.appendChild(opt);
+});
+
+function poblarSubgrupos(grupoValue) {
+  subgrupoSel.innerHTML = "";
+  if (!grupoValue || !SUBGRUPOS[grupoValue]) {
+    const opt = document.createElement("option");
+    opt.value = ""; opt.textContent = "Elegir grupo primero…";
+    opt.selected = true; opt.disabled = true;
+    subgrupoSel.appendChild(opt);
+    subgrupoSel.disabled = true;
+    return;
+  }
+  const placeholder = document.createElement("option");
+  placeholder.value = ""; placeholder.textContent = "Seleccionar…";
+  placeholder.selected = true; placeholder.disabled = true;
+  subgrupoSel.appendChild(placeholder);
+
+  SUBGRUPOS[grupoValue].forEach(s => {
+    const opt = document.createElement("option");
+    opt.value = s.v; opt.textContent = s.l;
+    subgrupoSel.appendChild(opt);
+  });
+  subgrupoSel.disabled = false;
+}
+poblarSubgrupos(null);
+
+grupoSel.addEventListener("change", () => poblarSubgrupos(grupoSel.value));
+
+/* ================= FECHA AUTOMÁTICA ================= */
+document.getElementById("fecha").value = new Date().toLocaleDateString("es-AR");
+
+/* ================= FOTO: PREVIEW ================= */
+const fotoInput = document.getElementById("fotoInput");
+const photoPreview = document.getElementById("photoPreview");
+const photoImg = document.getElementById("photoImg");
+const photoFilename = document.getElementById("photoFilename");
+const photoDropText = document.getElementById("photoDropText");
+
+fotoInput.addEventListener("change", () => {
+  const file = fotoInput.files[0];
+  if (!file) {
+    photoPreview.classList.remove("show");
+    photoFilename.textContent = "";
+    photoDropText.textContent = "Hacé clic para elegir una imagen (opcional)";
+    return;
+  }
+  photoDropText.textContent = "Cambiar imagen";
+  photoFilename.textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = e => {
+    photoImg.src = e.target.result;
+    photoPreview.classList.add("show");
+  };
+  reader.readAsDataURL(file);
+});
+
+/* ================= ENVÍO — FORMSUBMIT (sin backend propio) ================= */
+const FORM_ENDPOINT = "https://formsubmit.co/ajax/anmat.biotrom@gmail.com";
+
+const form = document.getElementById("codForm");
+const btnSend = document.getElementById("btnSend");
+const sendStatus = document.getElementById("sendStatus");
+const bannerOk = document.getElementById("bannerOk");
+const bannerErr = document.getElementById("bannerErr");
+
+function setStatus(text, cls) {
+  sendStatus.textContent = text;
+  sendStatus.className = "send-status " + (cls || "");
+}
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  bannerOk.classList.remove("show");
+  bannerErr.classList.remove("show");
+
+  if (!form.checkValidity()) {
+    form.reportValidity();
+    return;
+  }
+
+  btnSend.disabled = true;
+  setStatus("Enviando…", "pending");
+
+  const grupoLabel = grupoSel.options[grupoSel.selectedIndex]?.textContent || "";
+  const subgrupoLabel = subgrupoSel.options[subgrupoSel.selectedIndex]?.textContent || "";
+  const materialLabel = materialSel.options[materialSel.selectedIndex]?.textContent || "";
+
+  const fd = new FormData();
+  fd.append("_subject", "Pedido de codificación · " + document.getElementById("producto").value);
+  fd.append("_cc", "ingenieria.biotrom@gmail.com,design.biotrom@gmail.com");
+  fd.append("Solicitante", document.getElementById("solicitante").value);
+  fd.append("Fecha", document.getElementById("fecha").value);
+  fd.append("Producto", document.getElementById("producto").value);
+  fd.append("Grupo", grupoLabel);
+  fd.append("Subgrupo", subgrupoLabel);
+  fd.append("Material", materialLabel);
+  fd.append("Observaciones", document.getElementById("observaciones").value);
+  if (fotoInput.files[0]) fd.append("Fotografia", fotoInput.files[0]);
+
+  try {
+    const res = await fetch(FORM_ENDPOINT, {
+      method: "POST",
+      headers: { "Accept": "application/json" },
+      body: fd
+    });
+    if (!res.ok) throw new Error(res.status);
+    setStatus("Enviado ✓", "ok");
+    bannerOk.classList.add("show");
+    form.reset();
+    poblarSubgrupos(null);
+    photoPreview.classList.remove("show");
+    photoFilename.textContent = "";
+    photoDropText.textContent = "Hacé clic para elegir una imagen (opcional)";
+    document.getElementById("fecha").value = new Date().toLocaleDateString("es-AR");
+  } catch (err) {
+    setStatus("Error de envío", "error");
+    bannerErr.classList.add("show");
+  } finally {
+    btnSend.disabled = false;
+  }
+});
+
+document.getElementById("btnReset").addEventListener("click", () => {
+  form.reset();
+  poblarSubgrupos(null);
+  photoPreview.classList.remove("show");
+  photoFilename.textContent = "";
+  photoDropText.textContent = "Hacé clic para elegir una imagen (opcional)";
+  document.getElementById("fecha").value = new Date().toLocaleDateString("es-AR");
+  setStatus("", "");
+  bannerOk.classList.remove("show");
+  bannerErr.classList.remove("show");
+});
+</script>
+
+</body>
+</html>
