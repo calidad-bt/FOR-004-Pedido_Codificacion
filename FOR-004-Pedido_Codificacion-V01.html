@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FOR-004 · Pedido de Codificación de Producto</title>
+<title>FOR-004 · Pedido de Codificación</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -182,6 +182,32 @@ nav {
 .field input[readonly] { background: var(--bg); color: var(--text-2); }
 .field-hint { font-size: 11px; color: var(--text-3); }
 
+/* ===== TIPO DE SOLICITUD (toggle) ===== */
+.mode-toggle { display: flex; gap: 8px; }
+.mode-option {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  font-size: 13px; font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  color: var(--text-2);
+  background: var(--surface);
+  transition: background .1s, border-color .1s, color .1s;
+}
+.mode-option input { display: none; }
+.mode-option.active {
+  background: var(--accent-l);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ===== FILA COMBINADA (Código + Producto) ===== */
+.row-flex { display: flex; gap: 16px; }
+.row-flex .field-codigo { flex: 0 0 160px; }
+.row-flex .field-producto { flex: 1; }
+
 /* ===== FOTO ===== */
 .photo-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .photo-drop {
@@ -268,6 +294,20 @@ nav {
   .doc-header { grid-template-columns: 60px 1fr; }
   .doc-meta { grid-column: 1 / -1; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--border); }
   .meta-cell { border-left: 1px solid var(--border); }
+
+  /* iOS Safari hace zoom automático en inputs con font-size < 16px */
+  .field input[type="text"],
+  .field input[type="date"],
+  .field textarea,
+  .field select { font-size: 16px; }
+
+  .photo-row { flex-direction: column; align-items: stretch; }
+  .photo-preview { width: 100%; height: 160px; align-self: center; max-width: 220px; }
+  .form-footer { flex-direction: column; align-items: stretch; }
+  .form-footer > div { display: flex; }
+  .form-footer > div .btn { flex: 1; justify-content: center; }
+  .row-flex { flex-direction: column; }
+  .row-flex .field-codigo { flex: 1; }
 }
 </style>
 </head>
@@ -288,8 +328,7 @@ nav {
     <div class="doc-header">
       <div class="doc-logo"><span>BT</span></div>
       <div class="doc-title-col">
-        <div class="doc-title">Pedido de Codificación de Producto</div>
-        <div class="doc-subtitle">Solicitud de asignación de código ANMAT</div>
+        <div class="doc-title">Pedido de Codificación</div>
       </div>
       <div class="doc-meta">
         <div class="meta-cell top">
@@ -313,17 +352,37 @@ nav {
 
     <div class="card-body">
 
-      <div class="banner ok" id="bannerOk">Solicitud enviada correctamente. Se notificó a anmat.biotrom@gmail.com.</div>
+      <div class="banner ok" id="bannerOk">Solicitud enviada correctamente.</div>
       <div class="banner error" id="bannerErr">No se pudo enviar la solicitud. Verificá la conexión e intentá nuevamente.</div>
 
       <form id="codForm">
+
+        <div class="section">
+          <div class="section-title">Tipo de solicitud</div>
+          <div class="mode-toggle" id="modeToggle">
+            <label class="mode-option active" data-value="nuevo">
+              <input type="radio" name="tipoSolicitud" value="nuevo" checked> Nuevo código
+            </label>
+            <label class="mode-option" data-value="modificacion">
+              <input type="radio" name="tipoSolicitud" value="modificacion"> Modificación
+            </label>
+          </div>
+        </div>
 
         <div class="section">
           <div class="section-title">Datos de la solicitud</div>
           <div class="field-grid">
             <div class="field">
               <div class="field-label">Solicitante<span class="req">*</span></div>
-              <input type="text" name="Solicitante" id="solicitante" required placeholder="Nombre y apellido">
+              <select name="Solicitante" id="solicitante" required>
+                <option value="" selected disabled>Seleccionar…</option>
+                <option value="Yanina Baquero">Yanina Baquero</option>
+                <option value="Michel Moreno">Michel Moreno</option>
+                <option value="Maximiliano Centurion">Maximiliano Centurion</option>
+                <option value="Diego Michanie">Diego Michanie</option>
+                <option value="Mateo Mandarano">Mateo Mandarano</option>
+                <option value="Florencia Peydro">Florencia Peydro</option>
+              </select>
             </div>
             <div class="field">
               <div class="field-label">Fecha</div>
@@ -336,8 +395,16 @@ nav {
           <div class="section-title">Producto y clasificación</div>
           <div class="field-grid">
             <div class="field full">
-              <div class="field-label">Producto<span class="req">*</span></div>
-              <input type="text" name="Producto" id="producto" required placeholder="Nombre / descripción del producto a codificar">
+              <div class="row-flex">
+                <div class="field field-codigo" id="fieldCodigo" style="display:none;">
+                  <div class="field-label">Código<span class="req">*</span></div>
+                  <input type="text" name="Codigo" id="codigo" placeholder="Código existente">
+                </div>
+                <div class="field field-producto" id="fieldProducto">
+                  <div class="field-label">Producto<span class="req">*</span></div>
+                  <input type="text" name="Producto" id="producto" required placeholder="Nombre / descripción del producto a codificar">
+                </div>
+              </div>
             </div>
 
             <div class="field">
@@ -348,8 +415,8 @@ nav {
             </div>
 
             <div class="field">
-              <div class="field-label">Subgrupo<span class="req">*</span></div>
-              <select name="Subgrupo" id="subgrupo" required disabled>
+              <div class="field-label">Subgrupo</div>
+              <select name="Subgrupo" id="subgrupo" disabled>
                 <option value="" selected disabled>Elegir grupo primero…</option>
               </select>
             </div>
@@ -362,7 +429,7 @@ nav {
             </div>
 
             <div class="field full">
-              <div class="field-label">Observaciones</div>
+              <div class="field-label" id="obsLabel">Observaciones</div>
               <textarea name="Observaciones" id="observaciones" placeholder="Aclaraciones adicionales (opcional)"></textarea>
             </div>
           </div>
@@ -491,6 +558,50 @@ const MATERIALES = [
   { v: "F", l: "F · F138" },
 ];
 
+/* ================= SOLICITANTES → MAIL (para Reply-To) ================= */
+/* ⚠️ Completar con las direcciones reales de cada persona.
+   Si queda vacío, el mail se envía igual pero sin Reply-To personalizado. */
+const SOLICITANTES_MAIL = {
+  "Yanina Baquero":        "calidad@biotrom.com",
+  "Michel Moreno":         "calidadm@biotrom.com",
+  "Maximiliano Centurion": "pcp.biotrom@outlook.com",
+  "Diego Michanie":        "diego.biotrom@gmail.com",
+  "Mateo Mandarano":       "design.biotrom@gmail.com",
+  "Florencia Peydro":      "anmat.biotrom@gmail.com",
+};
+
+/* ================= TIPO DE SOLICITUD (nuevo código / modificación) ================= */
+const modeToggle = document.getElementById("modeToggle");
+const fieldCodigo = document.getElementById("fieldCodigo");
+const codigoInput = document.getElementById("codigo");
+const obsLabel = document.getElementById("obsLabel");
+const observacionesTxt = document.getElementById("observaciones");
+
+function setModo(modo) {
+  modeToggle.querySelectorAll(".mode-option").forEach(opt => {
+    opt.classList.toggle("active", opt.dataset.value === modo);
+  });
+
+  if (modo === "modificacion") {
+    fieldCodigo.style.display = "flex";
+    codigoInput.required = true;
+    obsLabel.textContent = "Modificación";
+    observacionesTxt.placeholder = "Describí qué se modifica del producto / código existente";
+    observacionesTxt.required = true;
+  } else {
+    fieldCodigo.style.display = "none";
+    codigoInput.required = false;
+    codigoInput.value = "";
+    obsLabel.textContent = "Observaciones";
+    observacionesTxt.placeholder = "Aclaraciones adicionales (opcional)";
+    observacionesTxt.required = false;
+  }
+}
+
+modeToggle.addEventListener("change", (e) => {
+  if (e.target.name === "tipoSolicitud") setModo(e.target.value);
+});
+
 /* ================= POBLAR SELECTS ================= */
 const grupoSel = document.getElementById("grupo");
 const subgrupoSel = document.getElementById("subgrupo");
@@ -563,7 +674,7 @@ fotoInput.addEventListener("change", () => {
 });
 
 /* ================= ENVÍO — FORMSUBMIT (sin backend propio) ================= */
-const FORM_ENDPOINT = "https://formsubmit.co/ajax/anmat.biotrom@gmail.com";
+const FORM_ENDPOINT = "https://formsubmit.co/ajax/ingenieria.biotrom@gmail.com";
 
 const form = document.getElementById("codForm");
 const btnSend = document.getElementById("btnSend");
@@ -592,17 +703,23 @@ form.addEventListener("submit", async (e) => {
   const grupoLabel = grupoSel.options[grupoSel.selectedIndex]?.textContent || "";
   const subgrupoLabel = subgrupoSel.options[subgrupoSel.selectedIndex]?.textContent || "";
   const materialLabel = materialSel.options[materialSel.selectedIndex]?.textContent || "";
+  const solicitanteNombre = document.getElementById("solicitante").value;
+  const solicitanteMail = SOLICITANTES_MAIL[solicitanteNombre] || "";
+  const tipoSolicitud = modeToggle.querySelector('input[name="tipoSolicitud"]:checked')?.value || "nuevo";
 
   const fd = new FormData();
   fd.append("_subject", "Pedido de codificación · " + document.getElementById("producto").value);
-  fd.append("_cc", "ingenieria.biotrom@gmail.com,design.biotrom@gmail.com");
-  fd.append("Solicitante", document.getElementById("solicitante").value);
+  fd.append("_cc", "anmat.biotrom@gmail.com");
+  if (solicitanteMail) fd.append("_replyto", solicitanteMail);
+  fd.append("Tipo de solicitud", tipoSolicitud === "modificacion" ? "Modificación" : "Nuevo código");
+  fd.append("Solicitante", solicitanteNombre);
   fd.append("Fecha", document.getElementById("fecha").value);
+  if (tipoSolicitud === "modificacion") fd.append("Codigo", codigoInput.value);
   fd.append("Producto", document.getElementById("producto").value);
   fd.append("Grupo", grupoLabel);
   fd.append("Subgrupo", subgrupoLabel);
   fd.append("Material", materialLabel);
-  fd.append("Observaciones", document.getElementById("observaciones").value);
+  fd.append(obsLabel.textContent, observacionesTxt.value);
   if (fotoInput.files[0]) fd.append("Fotografia", fotoInput.files[0]);
 
   try {
@@ -616,6 +733,7 @@ form.addEventListener("submit", async (e) => {
     bannerOk.classList.add("show");
     form.reset();
     poblarSubgrupos(null);
+    setModo("nuevo");
     photoPreview.classList.remove("show");
     photoFilename.textContent = "";
     photoDropText.textContent = "Hacé clic para elegir una imagen (opcional)";
@@ -631,6 +749,7 @@ form.addEventListener("submit", async (e) => {
 document.getElementById("btnReset").addEventListener("click", () => {
   form.reset();
   poblarSubgrupos(null);
+  setModo("nuevo");
   photoPreview.classList.remove("show");
   photoFilename.textContent = "";
   photoDropText.textContent = "Hacé clic para elegir una imagen (opcional)";
