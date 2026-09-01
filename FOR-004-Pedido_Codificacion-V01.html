@@ -776,12 +776,12 @@ form.addEventListener("submit", async (e) => {
   fd.append("Observaciones", observacionesValor);
 
   try {
+    const fotos = [];
     for (const file of selectedFiles) {
       const dataUrl = await fileToBase64(file);
-      fd.append("FotoBase64", dataUrl);
-      fd.append("FotoNombre", file.name);
-      fd.append("FotoTipo", file.type || "image/jpeg");
+      fotos.push({ nombre: file.name, tipo: file.type || "image/jpeg", base64: dataUrl });
     }
+    fd.append("FotosJSON", JSON.stringify(fotos));
 
     const res = await fetch(SCRIPT_URL, { method: "POST", body: fd });
     const data = await res.json();
