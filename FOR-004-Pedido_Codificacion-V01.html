@@ -719,7 +719,7 @@ fotoInput.addEventListener("change", () => {
 });
 
 /* ================= ENVÍO — GOOGLE APPS SCRIPT (mail con diseño propio) ================= */
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyqouv5E-x1PEmFU8x4co0DD_SU6rr9o7n-0dllGG88EUtDl1uE_sAdeR-QceXaw6tvcg/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwkB7F6G4vBUwzIqBip7afILznuvLVAPcbbsyr5RR-1R6pB1vAww6HFLpY4LYGrFVsyrQ/exec";
 
 const form = document.getElementById("codForm");
 const btnSend = document.getElementById("btnSend");
@@ -776,12 +776,14 @@ form.addEventListener("submit", async (e) => {
   fd.append("Observaciones", observacionesValor);
 
   try {
-    const fotos = [];
-    for (const file of selectedFiles) {
+    fd.append("FotoCount", String(selectedFiles.length));
+    for (let idx = 0; idx < selectedFiles.length; idx++) {
+      const file = selectedFiles[idx];
       const dataUrl = await fileToBase64(file);
-      fotos.push({ nombre: file.name, tipo: file.type || "image/jpeg", base64: dataUrl });
+      fd.append("FotoBase64_" + idx, dataUrl);
+      fd.append("FotoNombre_" + idx, file.name);
+      fd.append("FotoTipo_" + idx, file.type || "image/jpeg");
     }
-    fd.append("FotosJSON", JSON.stringify(fotos));
 
     const res = await fetch(SCRIPT_URL, { method: "POST", body: fd });
     const data = await res.json();
