@@ -237,6 +237,35 @@ nav {
 .photo-preview img { width: 100%; height: 100%; object-fit: cover; }
 .photo-filename { font-family: var(--mono); font-size: 11px; color: var(--text-2); margin-top: 6px; word-break: break-all; }
 
+.photo-gallery { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.photo-thumb {
+  position: relative;
+  width: 84px; height: 84px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: visible;
+  flex-shrink: 0;
+}
+.photo-thumb img {
+  width: 100%; height: 100%; object-fit: cover;
+  border-radius: var(--radius);
+  display: block;
+}
+.photo-thumb-remove {
+  position: absolute; top: -7px; right: -7px;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--err-bg);
+  border: 1px solid var(--err-bd);
+  color: var(--err-text);
+  font-size: 12px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  line-height: 1;
+}
+.photo-thumb-remove:hover { filter: brightness(.93); }
+.photo-count { font-size: 11px; color: var(--text-3); margin-top: 6px; }
+
 /* ===== BOTONES ===== */
 .btn {
   height: 30px; padding: 0 12px;
@@ -302,7 +331,6 @@ nav {
   .field select { font-size: 16px; }
 
   .photo-row { flex-direction: column; align-items: stretch; }
-  .photo-preview { width: 100%; height: 160px; align-self: center; max-width: 220px; }
   .form-footer { flex-direction: column; align-items: stretch; }
   .form-footer > div { display: flex; }
   .form-footer > div .btn { flex: 1; justify-content: center; }
@@ -439,14 +467,12 @@ nav {
           <div class="section-title">Fotografía del producto</div>
           <div class="photo-row">
             <label class="photo-drop" id="photoDrop">
-              <span id="photoDropText">Hacé clic para elegir una imagen (opcional)</span>
-              <input type="file" name="Fotografia" id="fotoInput" accept="image/*">
+              <span id="photoDropText">Hacé clic para agregar fotos (opcional, se puede más de una)</span>
+              <input type="file" name="Fotografia" id="fotoInput" accept="image/*" multiple>
             </label>
-            <div class="photo-preview" id="photoPreview">
-              <img id="photoImg" alt="Vista previa">
-            </div>
           </div>
-          <div class="photo-filename" id="photoFilename"></div>
+          <div class="photo-gallery" id="photoGallery"></div>
+          <div class="photo-count" id="photoCount"></div>
         </div>
 
         <div class="form-footer">
@@ -559,10 +585,8 @@ const MATERIALES = [
 ];
 
 /* ================= SOLICITANTES → MAIL (para Reply-To) ================= */
-/* ⚠️ Completar con las direcciones reales de cada persona.
-   Si queda vacío, el mail se envía igual pero sin Reply-To personalizado. */
 const SOLICITANTES_MAIL = {
-  "Yanina Baquero":        "calidad@biotrom.com",
+  "Yanina Baquero":        "supervisionpcp1@gmail.com",
   "Michel Moreno":         "calidadm@biotrom.com",
   "Maximiliano Centurion": "pcp.biotrom@outlook.com",
   "Diego Michanie":        "diego.biotrom@gmail.com",
@@ -648,29 +672,50 @@ grupoSel.addEventListener("change", () => poblarSubgrupos(grupoSel.value));
 /* ================= FECHA AUTOMÁTICA ================= */
 document.getElementById("fecha").value = new Date().toLocaleDateString("es-AR");
 
-/* ================= FOTO: PREVIEW ================= */
+/* ================= FOTOS: MÚLTIPLES + BORRAR ================= */
 const fotoInput = document.getElementById("fotoInput");
-const photoPreview = document.getElementById("photoPreview");
-const photoImg = document.getElementById("photoImg");
-const photoFilename = document.getElementById("photoFilename");
+const photoGallery = document.getElementById("photoGallery");
+const photoCount = document.getElementById("photoCount");
 const photoDropText = document.getElementById("photoDropText");
 
+let selectedFiles = [];
+
+function renderGallery() {
+  photoGallery.innerHTML = "";
+  selectedFiles.forEach((file, idx) => {
+    const thumb = document.createElement("div");
+    thumb.className = "photo-thumb";
+
+    const img = document.createElement("img");
+    img.src = URL.createObjectURL(file);
+    img.alt = file.name;
+    thumb.appendChild(img);
+
+    const removeBtn = document.createElement("div");
+    removeBtn.className = "photo-thumb-remove no-print";
+    removeBtn.textContent = "×";
+    removeBtn.title = "Quitar " + file.name;
+    removeBtn.addEventListener("click", () => {
+      selectedFiles.splice(idx, 1);
+      renderGallery();
+    });
+    thumb.appendChild(removeBtn);
+
+    photoGallery.appendChild(thumb);
+  });
+
+  photoCount.textContent = selectedFiles.length
+    ? selectedFiles.length + (selectedFiles.length === 1 ? " foto seleccionada" : " fotos seleccionadas")
+    : "";
+  photoDropText.textContent = selectedFiles.length
+    ? "Agregar más fotos"
+    : "Hacé clic para agregar fotos (opcional, se puede más de una)";
+}
+
 fotoInput.addEventListener("change", () => {
-  const file = fotoInput.files[0];
-  if (!file) {
-    photoPreview.classList.remove("show");
-    photoFilename.textContent = "";
-    photoDropText.textContent = "Hacé clic para elegir una imagen (opcional)";
-    return;
-  }
-  photoDropText.textContent = "Cambiar imagen";
-  photoFilename.textContent = file.name;
-  const reader = new FileReader();
-  reader.onload = e => {
-    photoImg.src = e.target.result;
-    photoPreview.classList.add("show");
-  };
-  reader.readAsDataURL(file);
+  selectedFiles = selectedFiles.concat(Array.from(fotoInput.files));
+  fotoInput.value = ""; // permite volver a elegir el mismo archivo y no pisa lo ya agregado
+  renderGallery();
 });
 
 /* ================= ENVÍO — GOOGLE APPS SCRIPT (mail con diseño propio) ================= */
@@ -731,8 +776,7 @@ form.addEventListener("submit", async (e) => {
   fd.append("Observaciones", observacionesValor);
 
   try {
-    const file = fotoInput.files[0];
-    if (file) {
+    for (const file of selectedFiles) {
       const dataUrl = await fileToBase64(file);
       fd.append("FotoBase64", dataUrl);
       fd.append("FotoNombre", file.name);
@@ -748,9 +792,8 @@ form.addEventListener("submit", async (e) => {
     form.reset();
     poblarSubgrupos(null);
     setModo("nuevo");
-    photoPreview.classList.remove("show");
-    photoFilename.textContent = "";
-    photoDropText.textContent = "Hacé clic para elegir una imagen (opcional)";
+    selectedFiles = [];
+    renderGallery();
     document.getElementById("fecha").value = new Date().toLocaleDateString("es-AR");
   } catch (err) {
     setStatus("Error de envío", "error");
@@ -764,9 +807,8 @@ document.getElementById("btnReset").addEventListener("click", () => {
   form.reset();
   poblarSubgrupos(null);
   setModo("nuevo");
-  photoPreview.classList.remove("show");
-  photoFilename.textContent = "";
-  photoDropText.textContent = "Hacé clic para elegir una imagen (opcional)";
+  selectedFiles = [];
+  renderGallery();
   document.getElementById("fecha").value = new Date().toLocaleDateString("es-AR");
   setStatus("", "");
   bannerOk.classList.remove("show");
